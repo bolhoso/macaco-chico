@@ -155,6 +155,7 @@ void test_check_move () {
 }
 
 int main () {
+	int moves = solve_maze (maze);
 
 	
 	return 0;
