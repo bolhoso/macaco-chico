@@ -15,6 +15,7 @@
 
 #define WALL '*'
 #define END  '+'
+#define PASSED '.'
 
 // TODO: isn't it possible to make directions easier to manipulate?
 // they can be an increment of X or Y
@@ -43,18 +44,30 @@ char maze[MAX_LIN][MAX_COL] = {
 };
 
 
+void print_maze () {
+	int i, j;
+	for (i = 0; i < MAX_LIN; i++) {
+		for (j = 0; j < MAX_COL; j++) {
+			putchar (maze[i][j]);
+		}
+		putchar ('\n');
+	}
+	putchar ('\n');
+}
+
 /*
  * Check if a move is within bounds or not
  */
 int check_bounds (struct pos *p) {
-	return !((p->x <= 0 && p->d == DIR_LEFT) ||
-		(p->x >= MAX_COL - 1 && p->d == DIR_RIGHT) ||
-		(p->y <= 0 && p->d == DIR_UP) ||
-		(p->y >= MAX_LIN - 1 && p->d == DIR_DOWN));
+	return !((p->x < 0) ||
+		(p->x > MAX_COL - 1) ||
+		(p->y < 0) ||
+		(p->y > MAX_LIN - 1));
 }
 
 /*
- * Check if it's possible to move from current (x, y) in direction d
+ * Check if it's possible to move from current (x, y) in direction d.
+ * Also, check if the monkey haven't already passed in the specified position
  */
 int can_move (char maze[MAX_LIN][MAX_COL], struct pos p) {
 	switch (p.d) {
@@ -69,14 +82,16 @@ int can_move (char maze[MAX_LIN][MAX_COL], struct pos p) {
 		return 0;
 	}
 
-	// we can move unless we have a wall
-	return maze[p.y][p.x] != WALL;
+	// we can move unless we have a wall and haven't passed through that pos.
+	return maze[p.y][p.x] != PASSED && maze[p.y][p.x] != WALL;
 }
 
 /*
  * Make a move from (x, y) in direction d and reset the direction
+ * If a solution is found in the future position, returns 1, otherwise,
+ * on normal moves, return 0
  */
-void move_and_reset (struct pos *p) {
+int move_and_reset (char maze[MAX_LIN][MAX_COL], struct pos *p) {
 	switch (p->d) {
 		case DIR_RIGHT:
 			p->x++; break;
@@ -88,34 +103,42 @@ void move_and_reset (struct pos *p) {
 			p->y++; break;
 	}
 
+	if (maze[p->y][p->x] == END) {
+		return 1;
+	}
+
+	maze[p->y][p->x] = PASSED;
 	p->d = DIR_UP;
+
+	return 0;
 }
 
 // TODO: nof_moves!
 #define SOLUTION_FOUND -1
 int solve_maze_recur (char maze[MAX_LIN][MAX_COL], struct pos pos) {
 
-	// First of all, check bounds
+	// Mmm.. so check the bounds
 	struct pos *p = &pos;
-	if (check_bounds (&pos)) {
+	if (!check_bounds (&pos)) {
 		return 0;
 	} 
 	
-	// Have we found the exit?
-	// TODO: how do we tell the end from a common re
-	if (maze[pos.y][pos.x] == END) {
-		printf ("Hoooray! Solution found! We're at (%d, %d).\n", pos.x, pos.y);
-		return SOLUTION_FOUND;
-	}
-
 	// Change the current coordinate according to the direction and reset
 	// direction
-	move_and_reset (&pos);
+	if (can_move (maze, pos)) { 
+		if (move_and_reset (maze, &pos)) {
+			printf ("Hoooray! Solution found! We're at (%d, %d).\n", pos.x, pos.y);
+			return SOLUTION_FOUND;
+		}
+	}
 
 	// Now, try moving in the 4 directions
 	while (pos.d <= DIR_RIGHT) {
-		printf ("-> %d", pos.d);
 		if (can_move (maze, pos)) {
+
+			printf ("-> (%d, %d) %d\n", pos.x, pos.y, pos.d);
+			print_maze();
+
 			if (solve_maze_recur (maze, pos) == SOLUTION_FOUND) {
 				return SOLUTION_FOUND;
 			}
@@ -129,9 +152,7 @@ int solve_maze_recur (char maze[MAX_LIN][MAX_COL], struct pos pos) {
 }
 
 int solve_maze (char maze[MAX_LIN][MAX_COL]) {
-	struct pos start = {1, 0, 0};
-
-
+	struct pos start = {1, 0, DIR_RIGHT};
 	return solve_maze_recur (maze, start);
 }
 
@@ -154,8 +175,17 @@ void test_check_move () {
 	assert (!can_move(maze, p1));
 }
 
+void test_solve () {
+	char simple_maze[MAX_LIN][MAX_COL] = {
+		{' ', '+'},
+	};
+
+	struct pos start = {0, 0, DIR_RIGHT};
+	solve_maze_recur (simple_maze, start);
+}
+
 int main () {
-	int moves = solve_maze (maze);
+	solve_maze (maze);
 
 	
 	return 0;
