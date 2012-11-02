@@ -27,6 +27,9 @@ typedef struct {
 } t_maze;
 
 
+/*
+ * Print the maze along with the current position and direction
+ */
 void print_maze (t_maze *m) {
 	int i, j;
 
@@ -167,7 +170,6 @@ int move_and_reset (t_maze *p) {
 	return 0;
 }
 
-// TODO: nof_moves!
 #define SOLUTION_FOUND -1
 int solve_maze_recur (t_maze pos) {
 
@@ -176,9 +178,6 @@ int solve_maze_recur (t_maze pos) {
 		return 0;
 	} 
 	
-	if (can_move (pos)) { 
-	}
-
 	// Now, try moving in the 4 directions
 	while (pos.d <= DIR_RIGHT) {
 		if (can_move (pos)) {
@@ -206,10 +205,14 @@ int solve_maze (t_maze *maze) {
 	return solve_maze_recur (*maze);
 }
 
-int main () {
-	t_maze *m = read_maze ("test.mz");
-	solve_maze (m);
-	m = free_maze (m);
-	
-	return 0;
+int main (int argc, char *argv[]) {
+	if (argc > 1) {
+		t_maze *m = read_maze (argv[1]);
+		solve_maze (m);
+		m = free_maze (m);
+
+		return 0;
+	}
+
+	fprintf (stderr, "Usage: %s <maze_file>\n", argv[0]);
 }
